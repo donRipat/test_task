@@ -11,43 +11,28 @@ OUTPUT_TEMP = OUTPUT_PATH + "_temp" + ".txt"
 DECOMPRESSED_PATH = OUTPUT_PATH + "_decompressed.txt"
 
 
-def parse(path: str, counter: FrequencyCounter) -> str:
-    with open(path, "r", encoding="utf-8") as input_text:
+def archiver():
+    with open(INPUT_PATH, "r", encoding="utf-8") as input_text:
         for line in input_text:
-            counter.count(line)
-    return "OK"
+            FrequencyCounter.count(line)
+    tree = HuffmanTree.build_tree(FrequencyCounter.get())
 
-
-def encode(input_path: str, output_path: str, table: dict):
-    with open(input_path, "r", encoding="utf-8") as input_text, open(output_path, "w", encoding="utf-8") as output_file:
+    with open(INPUT_PATH, "r", encoding="utf-8") as input_text, open(TEMP_PATH, "w", encoding="utf-8") as temp_file:
         size = 0
+        table = HuffmanTree.codes(tree)
         for line in input_text:
             size += len(line)
             for char in line:
-                output_file.write(table[char])
-    return size
+                temp_file.write(table[char])
 
-
-def binary_string_to_ascii(binary_string):
-    padded_binary_string = binary_string + '0' * (8 - len(binary_string) % 8)
-
-    ascii_characters = [chr(int(padded_binary_string[i:i+8], 2))
-                        for i in range(0, len(padded_binary_string), 8)]
-
-    result_string = ''.join(ascii_characters)
-    return result_string
-
-
-def compress():
-    counter = FrequencyCounter()
-    parse(INPUT_PATH, counter)
-    tree = HuffmanTree.build_tree(counter.get())
-    size = encode(INPUT_PATH, TEMP_PATH, tree.huffman_codes())
     with open(TEMP_PATH, "r", encoding="utf-8") as temp, open(OUTPUT_PATH, "w", encoding="utf-8") as output_file:
-        i = temp.readline()
-        output_file.writelines(str(tree.huffman_codes()) + '\n')
+        binary_string = temp.readline()
+        output_file.writelines(str(tree.codes()) + '\n')
         output_file.writelines(str(size) + '\n')
-        output_file.writelines(binary_string_to_ascii(i))
+        temp = binary_string + '0' * (8 - len(binary_string) % 8)
+        chars = ''.join([chr(int(temp[i:i + 8], 2))
+                         for i in range(0, len(temp), 8)])
+        output_file.writelines(chars)
     Path.unlink(Path(TEMP_PATH))
     return
 
@@ -69,14 +54,15 @@ def to_binary():
 
 
 def parse_binary(codes, size):
-    with open(OUTPUT_TEMP, "r", encoding="utf8") as binary, open(DECOMPRESSED_PATH, "w", encoding="utf-8") as dc:
+    with open(OUTPUT_TEMP, "r", encoding="utf8") as binary, \
+            open(DECOMPRESSED_PATH, "w", encoding="utf-8") as decompressed:
         line = binary.readline()
         word = ""
         words = 0
         for c in line:
             word += c
             if codes.get(word) is not None:
-                dc.write(codes[word])
+                decompressed.write(codes[word])
                 word = ""
                 words += 1
             if words == size:
@@ -85,11 +71,11 @@ def parse_binary(codes, size):
     return
 
 
-def decompress():
+def unpacker():
     parse_binary(*to_binary())
     return
 
 
 if __name__ == "__main__":
-    compress()
-    decompress()
+    archiver()
+    unpacker()

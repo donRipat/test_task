@@ -52,7 +52,7 @@ class HuffmanTree:
 
         return cls(priority_queue[0])
 
-    def huffman_codes(self) -> Dict[str, str]:
+    def codes(self) -> Dict[str, str]:
         codes = {}
 
         def traverse_tree(node: Optional[HuffmanNode] = None, code: str = ""):
